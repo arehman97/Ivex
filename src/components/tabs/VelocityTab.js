@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress, TextField } from '@mui/material';
 import { styled } from '@mui/system';
 import { FixedSizeList as List } from 'react-window';
-import { formatTimestamp } from '../utils/fetchDataEntries';
+import { formatTimestamp } from '../../utils/fetchDataEntries';
 
 const StyledTextField = styled(TextField)({
   marginBottom: '5px',

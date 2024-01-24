@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TablePagination, TableContainer, TableHead, TableRow, Paper, Typography, Button, Modal, Box, Tab, Tabs, IconButton } from '@mui/material';
 import { format } from 'date-fns';
 import { fetchDataEntries } from '../utils/fetchDataEntries';
-import VelocityTab from './VelocityTab';
-import AccelerationTab from './AccelerationTab';
-import GPSTab from './GPSTab';
+import VelocityTab from './tabs/VelocityTab';
+import AccelerationTab from './tabs/AccelerationTab';
+import GPSTab from './tabs/GPSTab';
 import ClearIcon from '@mui/icons-material/Clear';
 
 const MetadataTable = () => {

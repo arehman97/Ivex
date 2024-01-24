@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination, CircularProgress, TextField } from '@mui/material';
 import { styled } from '@mui/system';
 import { FixedSizeList as List } from 'react-window';
-import { formatTimestamp } from '../utils/fetchDataEntries';
+import { formatTimestamp } from '../../utils/fetchDataEntries';
 
 const StyledTextField = styled(TextField)({
   marginBottom: '5px',
@@ -15,7 +15,7 @@ const StyledTextField = styled(TextField)({
   },
 });
 
-const columnWidths = [150, 250, 320];
+const columnWidths = [120, 200, 400];
 
 const Row = ({ index, style, data }) => {
   const val = data[index];
@@ -24,16 +24,16 @@ const Row = ({ index, style, data }) => {
     <TableRow style={style}>
       {columnWidths.map((width, columnIndex) => (
         <TableCell key={columnIndex} style={{ width: `${width}px` }}>
-          {columnIndex === 0 ? val.sNo : 
-           columnIndex === 1 ? formatTimestamp(val.timestamp) : 
-           columnIndex === 2 ? val.value : null}
+          {columnIndex === 0 ? val?.sNo : 
+          columnIndex === 1 ? formatTimestamp(val.timestamp) : 
+          columnIndex === 2 ? `Lat: ${val.value.lat} - Lon: ${val.value.lon}` : null}
         </TableCell>
       ))}
     </TableRow>
   );
 };
 
-const AccelerationTab = ({ dataEntry, data, onDataUpdate }) => {
+const GPSTab = ({ dataEntry, data, onDataUpdate }) => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredData, setFilteredData] = useState([]);
@@ -43,13 +43,13 @@ const AccelerationTab = ({ dataEntry, data, onDataUpdate }) => {
       try {
         setLoading(true);
 
-        const response = await fetch(`/data/${dataEntry?.id}/acceleration.json`);
+        const response = await fetch(`/data/${dataEntry?.id}/gps.json`);
         const fetchedData = await response.json();
-        onDataUpdate(fetchedData?.acceleration);
+        onDataUpdate(fetchedData?.gps);
 
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching acceleration data:', error);
+        console.error('Error fetching gps data:', error);
         setLoading(false);
       }
     };
@@ -59,7 +59,9 @@ const AccelerationTab = ({ dataEntry, data, onDataUpdate }) => {
 
   useEffect(() => {
     const filterData = data.map((item, index) => ({ ...item, sNo: index + 1 })).filter((item) =>
-      String(item.timestamp).includes(searchQuery) || String(item.value).includes(searchQuery)
+      String(item.timestamp).includes(searchQuery) || 
+      String(item.value.lat).includes(searchQuery) ||
+      String(item.value.lon).includes(searchQuery)
     );
 
     setFilteredData(filterData);
@@ -86,9 +88,9 @@ const AccelerationTab = ({ dataEntry, data, onDataUpdate }) => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell width={150}>S.No</TableCell>
-                  <TableCell width={250}>Date & Time</TableCell>
-                  <TableCell>Value</TableCell>
+                  <TableCell width={120}>S.No</TableCell>
+                  <TableCell width={200}>Date & Time</TableCell>
+                  <TableCell>Location</TableCell>
                 </TableRow>
               </TableHead>
             </Table>
@@ -116,4 +118,4 @@ const AccelerationTab = ({ dataEntry, data, onDataUpdate }) => {
   );
 };
 
-export default AccelerationTab;
+export default GPSTab;
