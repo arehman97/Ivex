@@ -17,7 +17,7 @@ const Layout = () => {
       <CssBaseline />
       <AppBar position="fixed" sx={{ zIndex: theme.zIndex.drawer + 1 }}>
         <Toolbar>
-          <Typography variant="h6">Automated Driving Metadata</Typography>
+          <Typography variant="h6">Automated Driving Vehicles</Typography>
         </Toolbar>
       </AppBar>
       <Container

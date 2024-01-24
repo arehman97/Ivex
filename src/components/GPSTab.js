@@ -1,11 +1,42 @@
 import React, { useEffect, useState } from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination, CircularProgress } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination, CircularProgress, TextField } from '@mui/material';
+import { styled } from '@mui/system';
+import { FixedSizeList as List } from 'react-window';
+import { formatTimestamp } from '../utils/fetchDataEntries';
 
-const GPSTab = ({ dataEntry }) => {
-  const [gpsData, setGpsData] = useState([]);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+const StyledTextField = styled(TextField)({
+  marginBottom: '5px',
+  textAlign: 'end',
+  '& input': {
+    padding: '10px',
+  },
+  '& label': {
+    lineHeight: '0.85em',
+  },
+});
+
+const columnWidths = [120, 200, 400];
+
+const Row = ({ index, style, data }) => {
+  const val = data[index];
+
+  return (
+    <TableRow style={style}>
+      {columnWidths.map((width, columnIndex) => (
+        <TableCell key={columnIndex} style={{ width: `${width}px` }}>
+          {columnIndex === 0 ? val?.sNo : 
+          columnIndex === 1 ? formatTimestamp(val.timestamp) : 
+          columnIndex === 2 ? `Lat: ${val.value.lat} - Lon: ${val.value.lon}` : null}
+        </TableCell>
+      ))}
+    </TableRow>
+  );
+};
+
+const GPSTab = ({ dataEntry, data, onDataUpdate }) => {
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredData, setFilteredData] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -13,8 +44,8 @@ const GPSTab = ({ dataEntry }) => {
         setLoading(true);
 
         const response = await fetch(`/data/${dataEntry?.id}/gps.json`);
-        const data = await response.json();
-        setGpsData(data?.gps);
+        const fetchedData = await response.json();
+        onDataUpdate(fetchedData?.gps);
 
         setLoading(false);
       } catch (error) {
@@ -26,51 +57,63 @@ const GPSTab = ({ dataEntry }) => {
     fetchData();
   }, [dataEntry?.id]);
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
+  useEffect(() => {
+    const filterData = data.map((item, index) => ({ ...item, sNo: index + 1 })).filter((item) =>
+      String(item.timestamp).includes(searchQuery) || 
+      String(item.value.lat).includes(searchQuery) ||
+      String(item.value.lon).includes(searchQuery)
+    );
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+    setFilteredData(filterData);
+  }, [data, searchQuery]);
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
   };
 
   return (
     <div>
-      {loading && <div style={{textAlign: 'center'}}><CircularProgress /></div>}
-      {!loading && gpsData && gpsData.length > 0 && (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Timestamp</TableCell>
-                <TableCell>Value</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {(rowsPerPage > 0
-                ? gpsData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                : gpsData
-              ).map((data, index) => (
-                <TableRow key={index}>
-                  <TableCell>{data?.timestamp}</TableCell>
-                  <TableCell>Latitude: {data?.value?.lat} - Longitude: {data?.value?.lon}</TableCell>
+      <div style={{ marginBottom: '10px', textAlign: 'end' }}>
+        <StyledTextField
+          label="Search"
+          variant="outlined"
+          value={searchQuery}
+          onChange={handleSearchChange}
+        />
+      </div>
+      {loading && <div style={{ textAlign: 'center' }}><CircularProgress /></div>}
+      {!loading && (filteredData.length > 0 || (data && data.length > 0)) && (
+        <Paper>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell width={120}>S.No</TableCell>
+                  <TableCell width={200}>Date & Time</TableCell>
+                  <TableCell>Location</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+            </Table>
+          </TableContainer>
+
+          <TableContainer style={{ maxHeight: '400px' }}>
+            <Table>
+              <TableBody>
+                <List
+                  height={300}
+                  itemCount={filteredData.length}
+                  itemSize={50}
+                  width="100%"
+                  itemData={filteredData}
+                >
+                  {Row}
+                </List>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       )}
-      {!loading && (!gpsData || gpsData.length === 0) && <div>No data available</div>}
-      <TablePagination
-        rowsPerPageOptions={[5]}
-        component="div"
-        count={gpsData?.length || 0}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
+      {!loading && filteredData.length === 0 && <div>No matching data found</div>}
     </div>
   );
 };

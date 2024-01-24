@@ -1,11 +1,41 @@
 import React, { useEffect, useState } from 'react';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TablePagination, CircularProgress } from '@mui/material';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress, TextField } from '@mui/material';
+import { styled } from '@mui/system';
+import { FixedSizeList as List } from 'react-window';
+import { formatTimestamp } from '../utils/fetchDataEntries';
 
-const VelocityTab = ({ dataEntry }) => {
-  const [velocityData, setVelocityData] = useState([]);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+const StyledTextField = styled(TextField)({
+  marginBottom: '5px',
+  textAlign: 'end',
+  '& input': {
+    padding: '10px',
+  },
+  '& label': {
+    lineHeight: '0.85em',
+  },
+});
+const columnWidths = [150, 250, 320];
+
+const Row = ({ index, style, data }) => {
+  const val = data[index];
+
+  return (
+    <TableRow style={style}>
+      {columnWidths.map((width, columnIndex) => (
+        <TableCell key={columnIndex} style={{ width: `${width}px` }}>
+          {columnIndex === 0 ? val.sNo : 
+           columnIndex === 1 ? formatTimestamp(val.timestamp) : 
+           columnIndex === 2 ? val.value : null}
+        </TableCell>
+      ))}
+    </TableRow>
+  );
+};
+
+const VelocityTab = ({ dataEntry, data, onDataUpdate }) => {
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filteredData, setFilteredData] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -13,8 +43,8 @@ const VelocityTab = ({ dataEntry }) => {
         setLoading(true);
 
         const response = await fetch(`/data/${dataEntry?.id}/velocity.json`);
-        const data = await response.json();
-        setVelocityData(data?.velocity);
+        const fetchedData = await response.json();
+        onDataUpdate(fetchedData?.velocity);
 
         setLoading(false);
       } catch (error) {
@@ -26,51 +56,61 @@ const VelocityTab = ({ dataEntry }) => {
     fetchData();
   }, [dataEntry?.id]);
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
+  useEffect(() => {
+    const filterData = data.map((item, index) => ({ ...item, sNo: index + 1 })).filter((item) =>
+      String(item.timestamp).includes(searchQuery) || String(item.value).includes(searchQuery)
+    );
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+    setFilteredData(filterData);
+  }, [data, searchQuery]);
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
   };
 
   return (
     <div>
-      {loading && <div style={{textAlign: 'center'}}><CircularProgress /></div>}
-      {!loading && velocityData && velocityData.length > 0 && (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Timestamp</TableCell>
-                <TableCell>Value</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {(rowsPerPage > 0
-                ? velocityData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                : velocityData
-              ).map((data, index) => (
-                <TableRow key={index}>
-                  <TableCell>{data?.timestamp}</TableCell>
-                  <TableCell>{data?.value}</TableCell>
+      <div style={{ marginBottom: '10px', textAlign: 'end' }}>
+        <StyledTextField
+          label="Search"
+          variant="outlined"
+          value={searchQuery}
+          onChange={handleSearchChange}
+        />
+      </div>
+      {loading && <div style={{ textAlign: 'center' }}><CircularProgress /></div>}
+      {!loading && (filteredData.length > 0 || (data && data.length > 0)) && (
+        <Paper>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell width={150}>S.No</TableCell>
+                  <TableCell width={250}>Date & Time</TableCell>
+                  <TableCell>Value</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+            </Table>
+          </TableContainer>
+
+          <TableContainer style={{ maxHeight: '400px' }}>
+            <Table>
+              <TableBody>
+                <List
+                  height={300}
+                  itemCount={filteredData.length}
+                  itemSize={50}
+                  width="100%"
+                  itemData={filteredData}
+                >
+                  {Row}
+                </List>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
       )}
-      {!loading && (!velocityData || velocityData.length === 0) && <div>No data available</div>}
-      <TablePagination
-        rowsPerPageOptions={[5]}
-        component="div"
-        count={velocityData?.length || 0}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
+      {!loading && filteredData.length === 0 && <div>No matching data found</div>}
     </div>
   );
 };

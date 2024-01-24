@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TablePagination, TableContainer, TableHead, TableRow, Paper, Typography, Button, Modal, Box, Tab, Tabs, IconButton } from '@mui/material';
 import { format } from 'date-fns';
-import fetchDataEntries from '../utils/fetchDataEntries';
+import { fetchDataEntries } from '../utils/fetchDataEntries';
 import VelocityTab from './VelocityTab';
 import AccelerationTab from './AccelerationTab';
 import GPSTab from './GPSTab';
@@ -18,6 +18,21 @@ const MetadataTable = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [velocityData, setVelocityData] = useState([]);
+  const [accelerationData, setAccelerationData] = useState([]);
+  const [gpsData, setGPSData] = useState([]);
+
+  const updateVelocityData = (newData) => {
+    setVelocityData(newData);
+  };
+
+  const updateAccelerationData = (newData) => {
+    setAccelerationData(newData);
+  };
+
+  const updateGPSData = (newData) => {
+    setGPSData(newData);
+  };
 
   const handleViewDetails = (dataEntry) => {
     setSelectedDataEntry(dataEntry);
@@ -26,6 +41,7 @@ const MetadataTable = () => {
 
   const handleCloseModal = () => {
     setOpenModal(false);
+    setActiveTab(0);
   };
 
   const handleTabChange = (event, newValue) => {
@@ -43,12 +59,12 @@ const MetadataTable = () => {
 
   return (
     <div>
-      <Typography variant="h6">MetaData Entries</Typography>
+      <Typography variant="h6">Vehicle Entries</Typography>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Data Entry ID</TableCell>
+              <TableCell>Vehicle ID</TableCell>
               <TableCell>Recorded Date</TableCell>
               <TableCell>Duration</TableCell>
               <TableCell>Length in Meters</TableCell>
@@ -63,7 +79,7 @@ const MetadataTable = () => {
                 <TableCell>{dataEntry?.metadata?.duration}</TableCell>
                 <TableCell>{dataEntry?.metadata?.length_in_meters}</TableCell>
                 <TableCell>
-                  <Button onClick={() => handleViewDetails(dataEntry)}>View Details</Button>
+                  <Button style={{padding: 0}} onClick={() => handleViewDetails(dataEntry)}>View Details</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -89,15 +105,15 @@ const MetadataTable = () => {
                 >
                 <ClearIcon />
             </IconButton>
-            <Typography variant="h6">Data Entry Id: {selectedDataEntry?.id}</Typography>
+            <Typography variant="h6">Vehicle Id: {selectedDataEntry?.id}</Typography>
             <Tabs value={activeTab} onChange={handleTabChange}>
                 <Tab label="Velocity" />
                 <Tab label="Acceleration" />
                 <Tab label="GPS" />
             </Tabs>
-            {activeTab === 0 && <VelocityTab dataEntry={selectedDataEntry} />}
-            {activeTab === 1 && <AccelerationTab dataEntry={selectedDataEntry} />}
-            {activeTab === 2 && <GPSTab dataEntry={selectedDataEntry} />}
+            {activeTab === 0 && <VelocityTab dataEntry={selectedDataEntry} data={velocityData} onDataUpdate={updateVelocityData}/>}
+            {activeTab === 1 && <AccelerationTab dataEntry={selectedDataEntry} data={accelerationData} onDataUpdate={updateAccelerationData} />}
+            {activeTab === 2 && <GPSTab dataEntry={selectedDataEntry} data={gpsData} onDataUpdate={updateGPSData}/>}
         </Box>
       </Modal>
     </div>
